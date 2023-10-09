@@ -1,0 +1,331 @@
+#!/bin/bash
+
+# Function checks if the user entered a specific directory or not 
+checkDirectory(){
+
+echo "Please provide the directory path as an argument."
+echo "To do this, you use the command in which we first type the dot slash “./”. Then, you type the name of the script "
+read -r directory
+
+# Check if the directory path is provided as an argument
+if [ -z "directory" ]; then
+    echo "Please provide the directory path as an argument."
+    exit 1
+fi
+
+# Check if the provided directory exists
+if [ ! -d "$directory" ]; then
+    echo "The specified directory does not exist."
+    echo "to see the available directories in your path write ls" 
+  exit 1
+
+fi
+
+}
+
+
+
+# Function that displays all files in the directory that end with a specific extension
+checkExtenstion(){ 
+
+echo "Please provide the file extension you want to display:"
+echo "For example (.txt, .png, .java, ...)"
+read -r extension
+
+# Check if the provided extension is not empty
+if [ -z "$extension" ]
+
+then
+    echo "Please provide a valid file extension."
+    exit 1
+fi
+
+}
+
+
+#Function displays the files
+displayFiles(){
+checkDirectory
+echo
+echo "---------------------------"
+echo "---------------------------" 
+echo
+count_files
+echo
+echo "---------------------------"
+echo "---------------------------" 
+echo
+displayDirectorySize
+echo
+echo "---------------------------" 
+echo "---------------------------" 
+echo
+checkExtenstion
+echo
+echo "---------------------------" 
+echo "---------------------------" 
+echo
+biggestFileSize
+echo
+echo "---------------------------" 
+echo "---------------------------" 
+echo
+# List all files with the specified extension in the directory
+files=$(find "$directory" -type f -name "*$extension")
+
+if [ -z "$files" ]
+
+ then
+
+    echo "No files with the specified extension found in the directory."
+
+ else
+        echo "Comprehensive report for files in the directory:"
+        echo "---------------------------------------------------------------------------"
+        echo "File Name | Size (bytes) | Owner | Permissions | Last Modified Timestamp"
+        echo "---------------------------------------------------------------------------"
+
+# Loop through each file and display the details
+	for file in $files
+
+	do
+		size=$(stat -c "%s" "$file")
+		owner=$(stat -c "%U" "$file")
+		permissions=$(stat -c "%A" "$file")
+		timestamp=$(stat -c "%y" "$file")
+	
+	echo "$file | $size | $owner | $permissions | $timestamp"
+	sleep 1
+	done
+
+        # Loop through each file and save the details in file_analysis.txt
+        for file in $files
+
+	 do
+            size=$(stat -c "%s" "$file")
+            owner=$(stat -c "%U" "$file")
+            permissions=$(stat -c "%A" "$file")
+            timestamp=$(stat -c "%y" "$file")
+
+            echo "$file | $size | $owner | $permissions | $timestamp"
+	    sleep 1
+        done>file_analysis.txt
+
+        echo "---------------------------------------------------------------------------"
+fi 
+
+#calling more options
+groupFilesByOwner 
+echo
+echo "---------------------------" 
+echo "---------------------------" 
+echo
+sortsTheFileGroupsByTheTotalSizeOccupiedByEachOwner 
+echo
+echo "---------------------------" 
+echo "---------------------------" 
+echo
+summaryReport
+echo
+echo "---------------------------" 
+echo "---------------------------" 
+echo
+}
+
+
+
+declare -a usersGroupedFilesSize  
+groupFilesByOwner(){
+owner_totals=()
+
+echo "Do you want to group the files by owner?" 
+echo "If YES, enter Y; if NO, enter N: " 
+read -r choice
+
+while [ "$choice" != "Y" ] && [ "$choice" != "N" ]; do
+    echo "Wrong choice please write Y for yes or N for no"
+    echo "Do you want to group the files by owner?"
+    echo "If YES, enter Y; if NO, enter N: "
+    read -r choice
+done
+
+
+
+if [ "$choice" = "Y" ]; then
+
+echo "please enter how many times you want to group  files"
+read -r times
+n=0
+while [ "$n" -lt "$times" ]; do
+  echo "Please enter the owner name whose files you want to group: "
+  read -r USERNAME
+
+  grouping=$(find "$directory" -type f -name "*.$extension" -user "$USERNAME")
+	echo "$grouping" > userFilesGrouped.txt
+	fileSize=$(wc -c < userFilesGrouped.txt | awk '{print $1}')
+	usersGroupedFilesSize[$n]=$fileSize
+
+  ((n=n+1))
+
+
+# Print the contents of the file
+echo "Contents of userFilesGrouped.txt:"
+cat userFilesGrouped.txt
+
+# Print the file size
+echo "File size: $fileSize"
+
+done
+else                                                                                                                                         echo "Files will not be grouped by owner."                                                                                           fi 
+	 echo "Files will not be grouped by owner."
+fi
+
+}
+
+
+
+sortsTheFileGroupsByTheTotalSizeOccupiedByEachOwner(){
+#To sort the files groups by  the total size occupied by each owner.
+
+echo "Do you want to Sorts the file groups by the total size occupied by each owner." 
+echo "If YES, enter Y; if NO, enter N: " 
+read -r choice2 
+
+
+while [ "$choice2" != "Y" ] && [ "$choice2" != "N" ]; do
+    echo "Wrong choice. Please write Y for yes or N for no."
+    echo "Do you want to Sort the file groups by the total size occupied by each owner."
+    echo "If YES, enter Y; if NO, enter N: "
+    read -r choice2
+done
+
+if [ "$choice2" = "Y" ]; then
+    echo "File groups sorted by total size occupied by each owner:"
+    echo "------------------------------------------------------" 
+for element in "${usersGroupedFilesSize[@]}"; do
+  echo "$element"
+done
+    echo "------------------------------------------------------"
+else
+    echo "Files will not be grouped by the total size occupied by each owner."
+fi
+}
+
+
+count_files() {
+  echo "Do you want to show how many files the directory has inside?"
+  echo "If YES, enter Y; if NO, enter N: "
+  read -r choice3
+
+  while [ "$choice3" != "Y" ] && [ "$choice3" != "N" ]; do
+    echo "Wrong choice. Please write Y for yes or N for no."
+    echo "Do you want to show how many files the directory has inside?"
+    echo "If YES, enter Y; if NO, enter N: "
+    read -r choice3
+  done
+
+   if [ "$choice3" = "Y" ]; then
+    count=$(find "$directory" -type f | wc -l)
+    echo "This directory has $count files inside it."
+  fi
+}
+
+
+displayDirectorySize() {
+	echo "Do you want to show the directory size?" 
+	echo "If YES, enter Y; if NO, enter N: " 
+	read -r choice4
+
+while [ "$choice4" != "Y" ] && [ "$choice4" != "N" ]; do 
+	echo "Wrong choice. Please write Y for yes or N for no."
+	echo "Do you want to show the directory size?" 
+	echo "If YES, enter Y; if NO, enter N: " 
+read -r choice4 
+done
+if [ "$choice4" = "Y" ]; then
+
+   size=$(du -sh "$directory")
+   echo "the size of the directory provided is: $size"
+
+else
+echo "the size of the directory will not be generated"
+
+fi
+}
+
+
+
+summaryReport(){
+echo "Do you want to show the a summary report?"
+echo "If YES, enter Y; if NO, enter N: " 
+read -r choice5  
+
+while [ "$choice5" != "Y" ] && [ "$choice5" != "N" ]; do 
+echo "Wrong choice. Please write Y for yes or N for no." 
+echo "Do you want to show the summary report?" 
+echo "If YES, enter Y; if NO, enter N: "  
+read -r choice5  
+done
+if [ "$choice5" = "Y" ]; then
+echo
+echo "the size of the directory provided is: $size" 
+echo "--------------------------------------------"
+echo "This directory has $count files inside it."
+echo "--------------------------------------------"
+echo "the biggest fie size is $biggestSize inside the directory"
+echo "--------------------------------------------"
+else
+echo  "summary report will not be generated"
+fi
+}
+
+
+biggestFileSize() {
+echo "Do you want to see the biggest file in the $directory and ends with the extension $extension  "
+echo "If YES, enter Y; if NO, enter N: "  
+read -r choice6
+while [ "$choice6" != "Y" ] && [ "$choice6" != "N" ]; do 
+echo "Wrong choice. Please write Y for yes or N for no."  
+echo "Do you want to see the biggest file in the $directory and ends with the extension $extension  " 
+echo "If YES, enter Y; if NO, enter N: "  
+read -r choice6
+done
+if [ "$choice6" = "Y" ]; then 
+biggestSize=$(find $directory/*.$extension -type f -exec du -hs {} \; | sort -rh | head -n 1)
+echo "the biggest file is:  $biggestSize"
+else
+echo "Biggest directory will not be generated"
+fi
+}
+
+
+
+
+
+# Function to search for another extension
+numberOfSearchesUserWantToDo() {
+
+echo "Please provide how many times you would like to search for many extensions by entering a number (e.g., 1, 2, 3, 4, ...):" 
+read -r numberOfSearches 
+echo
+
+while ! [[ "$numberOfSearches" =~ ^[0-9]+$ ]]; do
+
+echo "Wrong please type a number"  
+echo "Please provide how many times you would like to search for many extensions by entering a number (e.g., 1, 2, 3, 4, ...):" 
+read -r numberOfSearches
+echo
+done
+
+
+ n=1
+  while [ "$n" -le "$numberOfSearches" ]; do
+    displayFiles
+    ((n=n+1))
+  done
+
+
+}
+
+# Call the function
+numberOfSearchesUserWantToDo
